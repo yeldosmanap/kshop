@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Maven build & tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      # mvnw и .mvn/ в .gitignore — генерируем wrapper на раннере
+      # (версии совпадают с локальным .mvn/wrapper/maven-wrapper.properties)
+      - name: Generate Maven Wrapper
+        run: |
+          mvn -B -ntp -N org.apache.maven.plugins:maven-wrapper-plugin:3.3.4:wrapper \
+            -Dmaven=3.9.16 -Dtype=only-script
+          chmod +x mvnw
+
+      - name: Build and test
+        run: ./mvnw -B -ntp verify
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: '**/target/surefire-reports/'
+          if-no-files-found: ignore

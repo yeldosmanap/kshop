@@ -1,6 +1,11 @@
 # Compiled class file
 *.class
 
+.idea
+
+mvnw
+mvnw.cmd
+.mvn
 # Log file
 *.log
 
